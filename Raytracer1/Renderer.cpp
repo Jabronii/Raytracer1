@@ -3,6 +3,7 @@
 #include "Sphere.h"
 #include <glm/gtx/norm.hpp>
 #include <glm/gtc/color_space.hpp>
+#include <glm/gtc/random.hpp>
 
 namespace Utils {
 
@@ -27,22 +28,34 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 {
 	m_ActiveScene = &scene;
 	m_ActiveCamera = &camera;
+
+	if (m_FrameIndex == 1)
+		memset(m_AccumulationData, 0, m_FinalImage->GetWidth() * m_FinalImage->GetHeight() * sizeof(glm::vec4));
 	for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++)
 	{
 		for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
 		{
 			glm::vec4 color = PerPixel(x, y);
+			m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
+
+			glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
+			accumulatedColor /= (float)m_FrameIndex;
 			//Tone mapping
-			color = color / (color + glm::vec4(1.));
+			accumulatedColor = accumulatedColor / (accumulatedColor + glm::vec4(1.));
 			//gamma correction
 			//color = glm::convertLinearToSRGB(color);
-			color.w = 1.;
+			accumulatedColor.w = 1.;
 
 			//color = glm::clamp(color, glm::vec4(0.), glm::vec4(1.));
-			m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(color);
+			m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
 		}
 	}
 	m_FinalImage->SetData(m_ImageData);
+
+	if (m_Settings.Accumulate)
+		m_FrameIndex++;
+	else
+		m_FrameIndex = 1;
 }
 
 //wi and wo must be normalized, point away from intersection point
@@ -66,57 +79,99 @@ glm::vec3 bsdf(SurfaceInteraction interaction, glm::vec3 wi, glm::vec3 wo)
 	return diffuse + specular;
 }
 
-glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
+bool findIntersection(Ray &ray, const Scene& scene, SurfaceInteraction* interaction)
 {
-	Ray screenRay = rayFromScreen(x, y);
-	float tHit;
-	SurfaceInteraction interaction;
-	SurfaceInteraction possibleInteraction;
 	bool intersected = false;
-	uint32_t objectCount = m_ActiveScene->primitives.size();
-	std::vector<float> hits(objectCount);
-	for (int i = 0; i < hits.size(); i++)
+	float tHit = -1;
+	SurfaceInteraction possibleInteraction;
+	SurfaceInteraction finalInteraction;
+	for (uint32_t i = 0; i < scene.primitives.size(); i++)
 	{
-		hits[i] = -1;
-	}
-	for (uint32_t i = 0; i < m_ActiveScene->primitives.size(); i++)
-	{
-		if (m_ActiveScene->primitives[i].Intersect(screenRay, &tHit, &possibleInteraction))
+		if (scene.primitives[i].Intersect(ray, &tHit, &possibleInteraction))
 		{
 			intersected = true;
-			hits[i] = tHit;
-			if (tHit< screenRay.tMax)
+			if (tHit < ray.tMax)
 			{
-				screenRay.tMax = tHit;
-				interaction = possibleInteraction;
+				ray.tMax = tHit;
+				finalInteraction = possibleInteraction;
 			}
 		}
 	}
-	if (x == m_FinalImage->GetWidth()/2 && y == m_FinalImage->GetHeight() / 2)
-	{
-		for (int i = 0; i < hits.size(); i++)
-		{
-			std::cout << hits[i] << " ";
-		}
-		std::cout << std::endl;
-	}
 	if (intersected)
 	{
-		glm::vec4 radiance(interaction.material.ambient,1.);
-		for (uint32_t j = 0; j < m_ActiveScene->lights.size(); j++)
-		{
-			Light currentLight = m_ActiveScene->lights[j];
-
-			float lightRadiance = currentLight.power / length2(currentLight.position - interaction.intersectPos);
-			glm::vec3 toCamera = glm::normalize(-screenRay.d);
-			glm::vec3 toLight = glm::normalize(currentLight.position - interaction.intersectPos);
-			
-			radiance += lightRadiance * glm::vec4(bsdf(interaction, toLight, toCamera), 0.);
-			//radiance += glm::vec4(1.);
-		}
-		return radiance;
+		*interaction = finalInteraction;
 	}
-	return glm::vec4(1.);
+	return intersected;
+}
+
+glm::vec3 randomDirectionOnHemisphere(glm::vec3 normal)
+{
+	glm::vec3 randomDir = glm::sphericalRand(1.);
+	if (glm::dot(normal, randomDir)<0)
+	{
+		randomDir = -randomDir;
+	}
+	return randomDir;
+}
+
+glm::vec3 Renderer::sample(uint32_t x, uint32_t y)
+{
+	Ray ray = rayFromScreen(x, y);
+	//std::cout << ray.o.x << " " << ray.o.y << " " << ray.o.z << std::endl;
+	constexpr uint32_t depth = 5;
+	glm::vec3 totalRadiance = glm::vec3(0.);
+	SurfaceInteraction interaction;
+	SurfaceInteraction dummyInteraction;
+	float multiplier = 1.;
+
+	for (uint32_t i = 0; i < depth; i++)
+	{
+
+		ray.o += 0.001f * interaction.normal;
+		if (findIntersection(ray, *m_ActiveScene, &interaction))
+		{
+			for (uint32_t j = 0; j < m_ActiveScene->lights.size(); j++)
+			{
+				Light currentLight = m_ActiveScene->lights[j];
+
+				float lightRadiance = currentLight.power / length2(currentLight.position - interaction.intersectPos);
+				glm::vec3 toCamera = glm::normalize(-ray.d);
+				glm::vec3 toLight = glm::normalize(currentLight.position - interaction.intersectPos);
+
+				Ray rayToLight(interaction.intersectPos, toLight);
+
+				//add light contribution if it isn't in shadow
+				//get the intersection and then compare the distance to the distance to the light
+				findIntersection(rayToLight, *m_ActiveScene, &dummyInteraction);
+				if (length2(dummyInteraction.intersectPos - rayToLight.o)>length2(currentLight.position-rayToLight.o))
+				{
+					totalRadiance += lightRadiance * bsdf(interaction, toLight, toCamera)*multiplier;
+				}
+			}
+		}
+		else
+		{
+			//no intersection, we have hit the skybox
+			glm::vec3 skyColor = glm::vec3(1., 0., 0.);
+			totalRadiance += skyColor * multiplier;
+			break;
+		}
+		//no need to do these expensive calculations if it is the end
+		if (i == depth-1)
+		{
+			break;
+		}
+		glm::vec3 randomDir = randomDirectionOnHemisphere(interaction.normal);
+		ray.o = interaction.intersectPos;
+		ray.d = randomDir;
+		multiplier *= 0.5;
+	}
+	return totalRadiance;
+}
+
+glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
+{
+	return glm::vec4(sample(x,y),1.);
 }
 
 Ray Renderer::rayFromScreen(uint32_t screenx, uint32_t screeny)

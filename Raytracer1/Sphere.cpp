@@ -3,14 +3,15 @@
 inline bool Quadratic(float a, float b, float c, float* t0, float* t1);
 
 Sphere::Sphere(glm::vec3 center, float radius) :
-	Shape(Transform(center)), radius(radius)
+	Shape(Transform(center)), radius(radius), position(center)
 {
 }
 
 bool Sphere::Intersect(Ray ray, float* tHit, SurfaceInteraction* interaction) const
 {
 	//tray is ray transformed to object space
-	Ray tray = Ray(objectToWorld.inv * glm::vec4(ray.o, 1), ray.d);
+	Ray tray(glm::vec3(objectToWorld.inv * glm::vec4(ray.o, 1)), ray.d);
+	//std::cout << objectToWorld.inv[0][3] << " " << objectToWorld.inv[1][3] << " " << objectToWorld.inv[2][3] << " " << ray.o.x << " "<<ray.o.y << " "<<ray.o.z << " " << tray.o.x << " " << tray.o.y << " " << tray.o.z << " "<<std::endl;
 	glm::vec3 o = tray.o;
 	glm::vec3 d = tray.d;
 	//formula is in pbrt sphere section
@@ -28,7 +29,7 @@ bool Sphere::Intersect(Ray ray, float* tHit, SurfaceInteraction* interaction) co
 		tShapeHit = t1;
 	}
 	glm::vec3 objectSpaceIntersection = tray(tShapeHit);
-	glm::vec3 worldSpaceIntersection = glm::vec4(objectSpaceIntersection,1) * objectToWorld.mat;
+	glm::vec3 worldSpaceIntersection = objectToWorld.mat  * glm::vec4(objectSpaceIntersection,1);
 	//this is in object space so the sphere is centered at 0
 	glm::vec3 normal = objectSpaceIntersection / radius;
 

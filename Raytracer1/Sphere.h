@@ -8,5 +8,6 @@ public:
 	Sphere(glm::vec3 center, float radius);
 	bool Intersect(Ray ray, float* tHit, SurfaceInteraction* interaction) const;
 	float radius;
+	glm::vec3 position;
 };
 

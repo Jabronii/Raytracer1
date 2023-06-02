@@ -20,40 +20,45 @@ class ExampleLayer : public Walnut::Layer
 {
 public:
 	ExampleLayer()
-		: m_Camera(45.0f, 0.1f, 100.0f), spherePos(0., -2., 2.)
+		: m_Camera(45.0f, 0.1f, 100.0f), spherePos(0., -0.5, -2.)
 	{
 		Material redMaterial(glm::vec3(1.,0.,0.), glm::vec3(0.2,0.05,0.05), glm::vec3(1.));
 		Material blueMaterial(glm::vec3(0., 0., 1.), glm::vec3(0.05, 0.05, 0.2), glm::vec3(1.));
 		Material greenMaterial(glm::vec3(0., 1., 0.), glm::vec3(0.05, 0.2, 0.05), glm::vec3(1.));
 		Material magentaMaterial(glm::vec3(1., 0., 1.), glm::vec3(0.2, 0.05, 0.2), glm::vec3(1.));
+		Material yellowMaterial(glm::vec3(1., 0.8, 0.1), glm::vec3(0.1, 0.1, 0.), glm::vec3(1.));
 
-		m_Camera.m_ForwardDirection = glm::normalize(glm::vec3(0., -1., -1.));
+		//m_Camera.m_ForwardDirection = glm::normalize(glm::vec3(0., -1., -1.));
 
 		//Add sphere
-		Shape* sphere = new Sphere(glm::vec3(0.5, -4., 4.0), 0.7);
+		Shape* sphere = new Sphere(spherePos, 0.5);
 		m_Scene.addPrimitive(sphere, magentaMaterial);
+
+		//Add sphere 2
+		Shape* sphere2 = new Sphere(spherePos + glm::vec3(-1.3,0.3,0.), 0.7);
+		m_Scene.addPrimitive(sphere2, greenMaterial);
 
 		//top plane
 		Shape* plane = new Plane(glm::vec3(0., 2., 0.), glm::vec3(0., -1., 0.));
 		m_Scene.addPrimitive(plane, blueMaterial);
 		//bottom plane
-		Shape* plane1 = new Plane(glm::vec3(0., -2., 0.), glm::vec3(0., 1., 0.));
+		Shape* plane1 = new Plane(glm::vec3(0., -1, 0.), glm::vec3(0., 1., 0.));
 		m_Scene.addPrimitive(plane1, redMaterial);
 		//left plane
 		Shape* plane2 = new Plane(glm::vec3(-2., 0., 0.), glm::vec3(1., 0., 0.));
-		m_Scene.addPrimitive(plane2, greenMaterial);
+		m_Scene.addPrimitive(plane2, magentaMaterial);
 		//right plane
 		Shape* plane3 = new Plane(glm::vec3(2., 0., 0.), glm::vec3(-1., 0., 0.));
 		m_Scene.addPrimitive(plane3, blueMaterial);
 		//front plane
-		Shape* plane4 = new Plane(glm::vec3(0., 0., 2.), glm::vec3(0., 0., -1.));
-		m_Scene.addPrimitive(plane4, blueMaterial);
+		Shape* plane4 = new Plane(glm::vec3(0., 0., 2.5), glm::vec3(0., 0., -1.));
+		m_Scene.addPrimitive(plane4, yellowMaterial);
 		//back plane
 		Shape* plane5 = new Plane(glm::vec3(0., 0., -2.), glm::vec3(0., 0., 1.));
-		m_Scene.addPrimitive(plane5, greenMaterial);
+		m_Scene.addPrimitive(plane5, yellowMaterial);
 
 		//add light
-		m_Scene.addLight(glm::vec3(1., 1., 0.), 1.);
+		m_Scene.addLight(glm::vec3(1, 1., 1.5), 13.);
 	}
 	virtual void OnUIRender() override
 	{
@@ -73,6 +78,16 @@ public:
 		ImGui::PopID();
 		primitive.shape->objectToWorld = Transform(spherePos);
 
+		/*
+		ImGui::Checkbox("Accumulate", &m_Renderer.GetSettings().Accumulate);
+
+		if (ImGui::Button("Reset"))
+			m_Renderer.ResetFrameIndex();
+
+		ImGui::End();
+		*/
+		ImGui::Text("Frame Index %.i", m_Renderer.m_FrameIndex);
+		std::cout << m_Renderer.m_FrameIndex << std::endl;
 
 		ImGui::Text("Last render: %.3fms", m_LastRenderTime);
 		if (ImGui::Button("Render"))
@@ -109,7 +124,8 @@ public:
 	}
 	virtual void OnUpdate(float ts) override
 	{
-		m_Camera.OnUpdate(ts);
+		if (m_Camera.OnUpdate(ts))
+			m_Renderer.ResetFrameIndex();
 	}
 private:
 	Renderer m_Renderer;

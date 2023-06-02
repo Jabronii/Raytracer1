@@ -17,6 +17,7 @@ bool Plane::Intersect(Ray ray, float* tHit, SurfaceInteraction* interaction) con
 	*tHit = t;
 	interaction->intersectPos = ray(t);
 	//so it points towards the camera
-	interaction->normal = glm::dot(normal, ray.d) < 0 ? normal : -normal;
+	interaction->normal = normal;
+	//interaction->normal = glm::dot(normal, ray.d) < 0 ? normal : -normal;
 	return true;
 }
