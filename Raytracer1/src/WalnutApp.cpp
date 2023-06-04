@@ -20,13 +20,13 @@ class ExampleLayer : public Walnut::Layer
 {
 public:
 	ExampleLayer()
-		: m_Camera(45.0f, 0.1f, 100.0f), spherePos(0., -0.5, -2.)
+		: m_Camera(45.0f, 0.1f, 100.0f), spherePos(0.5, 0., -3.)
 	{
-		Material redMaterial(glm::vec3(1.,0.,0.), glm::vec3(0.2,0.05,0.05), glm::vec3(1.));
-		Material blueMaterial(glm::vec3(0., 0., 1.), glm::vec3(0.05, 0.05, 0.2), glm::vec3(1.));
-		Material greenMaterial(glm::vec3(0., 1., 0.), glm::vec3(0.05, 0.2, 0.05), glm::vec3(1.));
-		Material magentaMaterial(glm::vec3(1., 0., 1.), glm::vec3(0.2, 0.05, 0.2), glm::vec3(1.));
-		Material yellowMaterial(glm::vec3(1., 0.8, 0.1), glm::vec3(0.1, 0.1, 0.), glm::vec3(1.));
+		Material redMaterial(glm::vec3(0.3,0.0,0.0), 1., 0.0);
+		Material blueMaterial(glm::vec3(0., 0., 1.), 0.2, 0.4);
+		Material greenMaterial(glm::vec3(0., 1., 0.), 0.2, 0.4);
+		Material magentaMaterial(glm::vec3(1., 0., 1.), 0.2, 0.1);
+		Material yellowMaterial(glm::vec3(1., 0.8, 0.1), 0.2, 0.2);
 
 		//m_Camera.m_ForwardDirection = glm::normalize(glm::vec3(0., -1., -1.));
 
@@ -35,30 +35,34 @@ public:
 		m_Scene.addPrimitive(sphere, magentaMaterial);
 
 		//Add sphere 2
-		Shape* sphere2 = new Sphere(spherePos + glm::vec3(-1.3,0.3,0.), 0.7);
+		Shape* sphere2 = new Sphere(spherePos + glm::vec3(-1.5,0.3,0.5), 0.7);
 		m_Scene.addPrimitive(sphere2, greenMaterial);
+
+		//Add sphere 3
+		Shape* sphere3 = new Sphere(spherePos + glm::vec3(0., 0.5, 1.), 0.3);
+		m_Scene.addPrimitive(sphere3, yellowMaterial);
 
 		//top plane
 		Shape* plane = new Plane(glm::vec3(0., 2., 0.), glm::vec3(0., -1., 0.));
 		m_Scene.addPrimitive(plane, blueMaterial);
 		//bottom plane
-		Shape* plane1 = new Plane(glm::vec3(0., -1, 0.), glm::vec3(0., 1., 0.));
+		Shape* plane1 = new Plane(glm::vec3(0., -0.5, 0.), glm::vec3(0., 1., 0.));
 		m_Scene.addPrimitive(plane1, redMaterial);
 		//left plane
 		Shape* plane2 = new Plane(glm::vec3(-2., 0., 0.), glm::vec3(1., 0., 0.));
 		m_Scene.addPrimitive(plane2, magentaMaterial);
 		//right plane
-		Shape* plane3 = new Plane(glm::vec3(2., 0., 0.), glm::vec3(-1., 0., 0.));
+		Shape* plane3 = new Plane(glm::vec3(1.5, 0., 0.), glm::vec3(-1., 0., 0.));
 		m_Scene.addPrimitive(plane3, blueMaterial);
 		//front plane
-		Shape* plane4 = new Plane(glm::vec3(0., 0., 2.5), glm::vec3(0., 0., -1.));
+		Shape* plane4 = new Plane(glm::vec3(0., 0., 3.5), glm::vec3(0., 0., -1.));
 		m_Scene.addPrimitive(plane4, yellowMaterial);
 		//back plane
-		Shape* plane5 = new Plane(glm::vec3(0., 0., -2.), glm::vec3(0., 0., 1.));
+		Shape* plane5 = new Plane(glm::vec3(0., 0., -3.4), glm::vec3(0., 0., 1.));
 		m_Scene.addPrimitive(plane5, yellowMaterial);
 
 		//add light
-		m_Scene.addLight(glm::vec3(1, 1., 1.5), 13.);
+		m_Scene.addLight(glm::vec3(1, 1., 1.5), 250.);
 	}
 	virtual void OnUIRender() override
 	{

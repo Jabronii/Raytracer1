@@ -5,6 +5,8 @@
 #include <glm/gtc/color_space.hpp>
 #include <glm/gtc/random.hpp>
 
+#include "bsdf.h"
+
 namespace Utils {
 
 	static uint32_t ConvertToRGBA(const glm::vec4& color)
@@ -58,26 +60,8 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 		m_FrameIndex = 1;
 }
 
-//wi and wo must be normalized, point away from intersection point
-glm::vec3 bsdf(SurfaceInteraction interaction, glm::vec3 wi, glm::vec3 wo)
-{
-	
-	glm::vec3 halfWayVec = glm::normalize(wi + wo);
-	glm::vec3 normal = interaction.normal;
 
-	Material material = interaction.material;
-	//Calculate phong model
-	//diffuse
-	float dotProduct = glm::dot(normal, wi);
-	dotProduct = dotProduct > 0 ? dotProduct : 0;
-	glm::vec3 diffuse = dotProduct * material.diffuse;
 
-	//specular
-	dotProduct = glm::dot(halfWayVec, normal);
-	float alpha = 8;
-	glm::vec3 specular = std::pow(dotProduct, alpha) * material.specular;
-	return diffuse + specular;
-}
 
 bool findIntersection(Ray &ray, const Scene& scene, SurfaceInteraction* interaction)
 {
@@ -126,7 +110,7 @@ glm::vec3 Renderer::sample(uint32_t x, uint32_t y)
 
 	for (uint32_t i = 0; i < depth; i++)
 	{
-
+		//the interaction normal starts at 0 so it is ok, this is meant to prevent self intersections
 		ray.o += 0.001f * interaction.normal;
 		if (findIntersection(ray, *m_ActiveScene, &interaction))
 		{
@@ -137,6 +121,11 @@ glm::vec3 Renderer::sample(uint32_t x, uint32_t y)
 				float lightRadiance = currentLight.power / length2(currentLight.position - interaction.intersectPos);
 				glm::vec3 toCamera = glm::normalize(-ray.d);
 				glm::vec3 toLight = glm::normalize(currentLight.position - interaction.intersectPos);
+				//because there are no transparent materials yet we can automatically reject if the surface does not face the light
+				if (glm::dot(interaction.normal, toLight)<=0.f)
+				{
+					continue;
+				}
 
 				Ray rayToLight(interaction.intersectPos, toLight);
 
@@ -164,7 +153,7 @@ glm::vec3 Renderer::sample(uint32_t x, uint32_t y)
 		glm::vec3 randomDir = randomDirectionOnHemisphere(interaction.normal);
 		ray.o = interaction.intersectPos;
 		ray.d = randomDir;
-		multiplier *= 0.5;
+		multiplier *= 0.2;
 	}
 	return totalRadiance;
 }
