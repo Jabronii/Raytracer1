@@ -20,6 +20,7 @@ public:
 	Ray rayFromScreen(uint32_t x, uint32_t y);
 	void OnResize(uint32_t width, uint32_t height);
 	glm::vec3 Renderer::sample(uint32_t x, uint32_t y);
+	glm::vec3 sampleLi(Ray ray, unsigned int depth, unsigned int maxDepth);
 	std::shared_ptr<Walnut::Image> GetFinalImage() const { return m_FinalImage; }
 	void ResetFrameIndex() { m_FrameIndex = 1; }
 	Settings& GetSettings() { return m_Settings; }

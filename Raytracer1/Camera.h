@@ -20,6 +20,7 @@ public:
 	const glm::vec3& GetDirection() const { return m_ForwardDirection; }
 
 	const std::vector<glm::vec3>& GetRayDirections() const { return m_RayDirections; }
+	glm::vec3 getProjectedRay(const float x, const float y) const;
 
 	float GetRotationSpeed();
 private:

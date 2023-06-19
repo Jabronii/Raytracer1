@@ -22,11 +22,12 @@ public:
 	ExampleLayer()
 		: m_Camera(45.0f, 0.1f, 100.0f), spherePos(0.5, 0., -3.)
 	{
-		Material redMaterial(glm::vec3(0.3,0.0,0.0), 1., 0.0);
-		Material blueMaterial(glm::vec3(0., 0., 1.), 0.2, 0.4);
-		Material greenMaterial(glm::vec3(0., 1., 0.), 0.2, 0.4);
-		Material magentaMaterial(glm::vec3(1., 0., 1.), 0.2, 0.1);
-		Material yellowMaterial(glm::vec3(1., 0.8, 0.1), 0.2, 0.2);
+		Material redMaterial(glm::vec3(0.3,0.0,0.0), 1., 0.1);
+		Material blueMaterial(glm::vec3(0., 0., 1.), 0.2, 0.05);
+		Material greenMaterial(glm::vec3(0., 1., 0.), 1., 0.1);
+		Material magentaMaterial(glm::vec3(1., 0., 1.), 0.2, 0.7);
+		Material yellowMaterial(glm::vec3(1., 0.8, 0.1), 1., 0.3);
+		Material mirrorMaterial(glm::vec3(1.), 1., 0.03);
 
 		//m_Camera.m_ForwardDirection = glm::normalize(glm::vec3(0., -1., -1.));
 
@@ -35,34 +36,38 @@ public:
 		m_Scene.addPrimitive(sphere, magentaMaterial);
 
 		//Add sphere 2
-		Shape* sphere2 = new Sphere(spherePos + glm::vec3(-1.5,0.3,0.5), 0.7);
+		Shape* sphere2 = new Sphere(spherePos + glm::vec3(-1.2,0.2,-0.3), 0.7);
 		m_Scene.addPrimitive(sphere2, greenMaterial);
 
 		//Add sphere 3
-		Shape* sphere3 = new Sphere(spherePos + glm::vec3(0., 0.5, 1.), 0.3);
-		m_Scene.addPrimitive(sphere3, yellowMaterial);
+		Shape* sphere3 = new Sphere(spherePos + glm::vec3(0., 0.81, 0.), 0.3);
+		m_Scene.addPrimitive(sphere3, mirrorMaterial);
+
+		//Add sphere 4
+		Shape* sphere4 = new Sphere(spherePos + glm::vec3(0., 5., -3.), 5.);
+		m_Scene.addPrimitive(sphere4, blueMaterial);
 
 		//top plane
 		Shape* plane = new Plane(glm::vec3(0., 2., 0.), glm::vec3(0., -1., 0.));
-		m_Scene.addPrimitive(plane, blueMaterial);
+		//m_Scene.addPrimitive(plane, blueMaterial);
 		//bottom plane
 		Shape* plane1 = new Plane(glm::vec3(0., -0.5, 0.), glm::vec3(0., 1., 0.));
-		m_Scene.addPrimitive(plane1, redMaterial);
+		m_Scene.addPrimitive(plane1, yellowMaterial);
 		//left plane
 		Shape* plane2 = new Plane(glm::vec3(-2., 0., 0.), glm::vec3(1., 0., 0.));
-		m_Scene.addPrimitive(plane2, magentaMaterial);
+		//m_Scene.addPrimitive(plane2, magentaMaterial);
 		//right plane
 		Shape* plane3 = new Plane(glm::vec3(1.5, 0., 0.), glm::vec3(-1., 0., 0.));
-		m_Scene.addPrimitive(plane3, blueMaterial);
+		//m_Scene.addPrimitive(plane3, blueMaterial);
 		//front plane
 		Shape* plane4 = new Plane(glm::vec3(0., 0., 3.5), glm::vec3(0., 0., -1.));
-		m_Scene.addPrimitive(plane4, yellowMaterial);
+		//m_Scene.addPrimitive(plane4, yellowMaterial);
 		//back plane
 		Shape* plane5 = new Plane(glm::vec3(0., 0., -3.4), glm::vec3(0., 0., 1.));
-		m_Scene.addPrimitive(plane5, yellowMaterial);
+		//m_Scene.addPrimitive(plane5, yellowMaterial);
 
 		//add light
-		m_Scene.addLight(glm::vec3(1, 1., 1.5), 250.);
+		m_Scene.addLight(glm::vec3(0.5, 2., 1.), 0.);
 	}
 	virtual void OnUIRender() override
 	{
@@ -76,7 +81,8 @@ public:
 		ImGui::DragFloat3("Sphere position", glm::value_ptr(spherePos), 0.1f);
 		ImGui::DragFloat3("Light position", glm::value_ptr(light.position), 0.1f);
 		ImGui::DragFloat("Power", &light.power, 0.1f);
-
+		ImGui::DragFloat3("CameraPosition", glm::value_ptr(m_Camera.m_Position), 0.1f);
+		ImGui::DragFloat3("CameraPosition", glm::value_ptr(m_Camera.m_ForwardDirection), 0.1f);
 		ImGui::Separator();
 
 		ImGui::PopID();
@@ -103,8 +109,10 @@ public:
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 		ImGui::Begin("Viewport");
 
-		m_ViewportWidth = ImGui::GetContentRegionAvail().x;
-		m_ViewportHeight = ImGui::GetContentRegionAvail().y;
+		//m_ViewportWidth = ImGui::GetContentRegionAvail().x;
+		//m_ViewportHeight = ImGui::GetContentRegionAvail().y;
+		m_ViewportWidth = 400;
+		m_ViewportHeight = 300;
 
 		auto image = m_Renderer.GetFinalImage();
 		if (image)
